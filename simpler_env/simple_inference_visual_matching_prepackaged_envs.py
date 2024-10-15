@@ -8,6 +8,22 @@ Example:
         --ckpt-path None --task widowx_spoon_on_towel  --logging-root ./results_simple_eval/  --n-trajs 10
     python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy openvla/openvla-7b \
         --ckpt-path None --task google_robot_move_near_v1  --logging-root ./results_simple_eval/  --n-trajs 10
+
+    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy rt1 \
+    --ckpt-path ./checkpoints/rt_1_x_tf_trained_for_002272480_step \
+    --task google_robot_pick_coke_can --logging-root ./results_simple_eval --n-trajs 2
+    
+    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy openvla/openvla-7b \
+    --ckpt-path None \
+    --task google_robot_pick_coke_can --logging-root ./results_simple_eval --n-trajs 2
+    
+    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy openvla/openvla-7b \
+    --ckpt-path None \
+    --task widowx_spoon_on_towel --logging-root ./results_simple_eval --n-trajs 2
+    
+    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy rt1 \
+    --ckpt-path ./checkpoints/rt_1_x_tf_trained_for_002272480_step \
+    --task widowx_spoon_on_towel --logging-root ./results_simple_eval --n-trajs 2
 """
 
 import argparse
@@ -47,7 +63,7 @@ if args.ckpt_path[-1] == "/":
 logging_dir = os.path.join(args.logging_root, args.task, args.policy, os.path.basename(args.ckpt_path))
 os.makedirs(logging_dir, exist_ok=True)
 
-os.environ["DISPLAY"] = ""
+# os.environ["DISPLAY"] = ""
 # prevent a single jax process from taking up all the GPU memory
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 gpus = tf.config.list_physical_devices("GPU")
@@ -88,14 +104,14 @@ else:
 success_arr = []
 for ep_id in range(args.n_trajs):
     obs, reset_info = env.reset()
-    instruction = env.get_language_instruction()
+    instruction = env.unwrapped.get_language_instruction()
     # for long-horizon environments, we check if the current subtask is the final subtask
-    is_final_subtask = env.is_final_subtask() 
+    is_final_subtask = env.unwrapped.is_final_subtask() 
 
     model.reset(instruction)
     print(instruction)
 
-    image = get_image_from_maniskill2_obs_dict(env, obs)  # np.ndarray of shape (H, W, 3), uint8
+    image = get_image_from_maniskill2_obs_dict(env.unwrapped, obs)  # np.ndarray of shape (H, W, 3), uint8
     images = [image]
     predicted_terminated, success, truncated = False, False, False
     timestep = 0
@@ -113,14 +129,14 @@ for ep_id in range(args.n_trajs):
             np.concatenate([action["world_vector"], action["rot_axangle"], action["gripper"]]),
         )
         print(timestep, info)
-        new_instruction = env.get_language_instruction()
+        new_instruction = env.unwrapped.get_language_instruction()
         if new_instruction != instruction:
             # update instruction for long horizon tasks
             instruction = new_instruction
             print(instruction)
-        is_final_subtask = env.is_final_subtask() 
+        is_final_subtask = env.unwrapped.is_final_subtask() 
         # update image observation
-        image = get_image_from_maniskill2_obs_dict(env, obs)
+        image = get_image_from_maniskill2_obs_dict(env.unwrapped, obs)
         images.append(image)
         timestep += 1
 

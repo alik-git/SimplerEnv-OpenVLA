@@ -128,7 +128,7 @@ for ep_id in range(args.n_trajs):
         # Handle subtask advancement if required
         if predicted_terminated and not is_final_subtask:
             predicted_terminated = False
-            env.advance_to_next_subtask()
+            env.unwrapped.advance_to_next_subtask()
 
         # Perform environment step
         obs, reward, success, truncated, info = env.step(

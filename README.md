@@ -1,3 +1,74 @@
+# Ali's Notes on running OpenVLA on SimplerEnv
+
+So to run OpenVLA on SimplerEnv, I started off from this fork by [DelinQu](https://github.com/DelinQu) that already does most of the work.
+
+Most of my changes to get the code to run simply involved replacinng `env` with `env.unwrapped`. I'm guessing someone applied a wrapper onto the envronment and forgot to update the code. The instructions to reproduce my results are below, but here is a brief overview of what I found.
+
+Like everyone else discussing OpenVLA on SimplerEnv in this Github Issue here, I found that OpenVLA performs quite poorly on the SimplerEnv tasks, and basically does not perform at all on the WidowX tasks.
+
+```
+      Task Type   Policy  Average Success Rate  Total Valid Trajectories
+0  Google Robot      rt1              0.593750                       160
+1        WidowX      rt1              0.025000                        40
+2  Google Robot  openvla              0.214286                       210
+3        WidowX  openvla              0.000000                        40
+```
+
+Note that some evals crashed, so its not perfect (and there might be bugs in the policy implementation as well). Steps to run these evals yourself are below
+
+## Installation
+
+Just follow the regular installation instructions [here](https://github.com/DelinQu/SimplerEnv-OpenVLA?tab=readme-ov-file#installation). Since we're also going to run the RT1 and OpenVLA policies, you need to follow the subsequent instructions [here](https://github.com/DelinQu/SimplerEnv-OpenVLA?tab=readme-ov-file#full-installation-rt-1-octo-openvla-inference-env-building) as well.
+
+## Sanity Checks
+
+Before running full eval sweeps, you should confirm things can run.
+
+### No Policy (Random Actions)
+First, try running [this script](https://github.com/alik-git/SimplerEnv-OpenVLA/blob/main/getting_started.py), which does a simple sanity check, just running the environment without any policy, by just randomly sampling actions. A video of the rollout is saved.
+
+### RT1-X
+
+Then, [this script](https://github.com/alik-git/SimplerEnv-OpenVLA/blob/main/getting_started_rtx.py) runs the RT1-X policy and saves a video of the rollout. Remember that you need to download the model checkpoint and follow installation instructions [here](https://github.com/DelinQu/SimplerEnv-OpenVLA?tab=readme-ov-file#rt-1-inference-setup). And edit the values so that they point to your checkpoint:
+```
+checkpoint_dir = "/home/kasm-user/SimplerEnv-OpenVLA/checkpoints" # Edit these values! 
+rt_1_checkpoint = os.path.join(checkpoint_dir, "rt_1_x_tf_trained_for_002272480_step")  # Edit these values! 
+```
+
+
+### OpenVLA model
+Finally, [try the OpenVLA model](https://github.com/alik-git/SimplerEnv-OpenVLA/blob/main/getting_started_ovla.py). Again, don't forget the install instructions [here](https://github.com/DelinQu/SimplerEnv-OpenVLA?tab=readme-ov-file#openvla-inference-setup). The output from the OpenVLA model is not in the same format expected by SimplerEnv, so we need to convert it. This is straightforward:
+
+```
+# Raw action from OpenVLA policy
+openvla_out, action = openvla_policy.step(image=image, task_description=instruction)
+
+# Convert to SimplerEnv format
+position_deltas = action['world_vector'].tolist() # Position deltas (x, y, z)
+rotation_deltas = action['rot_axangle'].tolist() # Rotation (x, y, z) as axis-angle
+gripper_state = [action['gripper'][0]] # Gripper state
+
+# Construct a flat list matching the sample action format
+transformed_action = position_deltas + rotation_deltas + gripper_state
+
+# Convert the action list to a NumPy array
+transformed_action = np.array(transformed_action, dtype=np.float32)
+
+# Perform environment step with the transformed action
+obs, reward, done, truncated, info = env.step(transformed_action)
+```
+
+## Moving on
+
+If all the sanity check scripts run without errors, now you can run full evals using the provided "prepackaged environments" script ([original](https://github.com/DelinQu/SimplerEnv-OpenVLA/blob/main/simpler_env/simple_inference_visual_matching_prepackaged_envs.py), [my_version](https://github.com/alik-git/SimplerEnv-OpenVLA/blob/main/simpler_env/simple_inference_visual_matching_prepackaged_envs.py)). I made some minor changes to it, mainly that in addition to a video of the rollout, it also saves a detailed log of the rollout in json format, which can then easily be compiled to analyse the results.
+
+Then I wrote [this simple script](https://github.com/alik-git/SimplerEnv-OpenVLA/blob/main/simple_full_eval_runner.py) that batch runs the above "prepackaged environments" script with both RT1-X and OpenVLA on each of the available tasks (with 10 rollouts each task). Then I wrote a ["results analyser" script](https://github.com/alik-git/SimplerEnv-OpenVLA/blob/main/results_analyser.py) that calculates the average success rate for each policy (rt1x, openvla) on each type of task (google_robot, widowX).
+
+
+
+
+
+
 # SimplerEnv: Simulated Manipulation Policy Evaluation Environments for Real Robot Setups
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/simpler-env/SimplerEnv/blob/main/example.ipynb)
@@ -14,9 +85,16 @@ This repository encompasses 2 real-to-sim evaluation setups:
 
 We hope that our work guides and inspires future real-to-sim evaluation efforts.
 
+- [Ali's Notes on running OpenVLA on SimplerEnv](#alis-notes-on-running-openvla-on-simplerenv)
+  - [Installation](#installation)
+  - [Sanity Checks](#sanity-checks)
+    - [No Policy (Random Actions)](#no-policy-random-actions)
+    - [RT1-X](#rt1-x)
+    - [OpenVLA model](#openvla-model)
+  - [Moving on](#moving-on)
 - [SimplerEnv: Simulated Manipulation Policy Evaluation Environments for Real Robot Setups](#simplerenv-simulated-manipulation-policy-evaluation-environments-for-real-robot-setups)
   - [Getting Started](#getting-started)
-  - [Installation](#installation)
+  - [Installation](#installation-1)
   - [Examples](#examples)
   - [Current Environments](#current-environments)
   - [Compare Your Policy Evaluation Approach to SIMPLER](#compare-your-policy-evaluation-approach-to-simpler)

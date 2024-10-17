@@ -8,23 +8,8 @@ Example:
         --ckpt-path None --task widowx_spoon_on_towel  --logging-root ./results_simple_eval/  --n-trajs 10
     python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy openvla/openvla-7b \
         --ckpt-path None --task google_robot_move_near_v1  --logging-root ./results_simple_eval/  --n-trajs 10
-
-    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy rt1 \
-    --ckpt-path ./checkpoints/rt_1_x_tf_trained_for_002272480_step \
-    --task google_robot_pick_coke_can --logging-root ./results_simple_eval --n-trajs 2
-    
-    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy openvla/openvla-7b \
-    --ckpt-path None \
-    --task google_robot_pick_coke_can --logging-root ./results_simple_eval --n-trajs 2
-    
-    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy openvla/openvla-7b \
-    --ckpt-path None \
-    --task widowx_spoon_on_towel --logging-root ./results_simple_eval --n-trajs 2
-    
-    python simpler_env/simple_inference_visual_matching_prepackaged_envs.py --policy rt1 \
-    --ckpt-path ./checkpoints/rt_1_x_tf_trained_for_002272480_step \
-    --task google_robot_close_bottom_drawer --logging-root ./results_simple_eval --n-trajs 2
 """
+
 import argparse
 import os
 import json
@@ -56,11 +41,12 @@ def convert_numpy_types(obj):
 # Set up argument parsing and logging
 parser = argparse.ArgumentParser()
 parser.add_argument("--policy", default="rt1", choices=["rt1", "octo-base", "octo-small", "openvla/openvla-7b"])
-parser.add_argument("--ckpt-path", type=str, default="./checkpoints/rt_1_x_tf_trained_for_002272480_step/")
+parser.add_argument("--ckpt-path", type=str, default="./checkpoints/rt_1_x_tf_trained_for_002272480_step/") # Replace with your checkpoint!
 parser.add_argument("--task", default="google_robot_pick_horizontal_coke_can", choices=ENVIRONMENTS)
 parser.add_argument("--logging-root", type=str, default="./results_simple_random_eval")
 parser.add_argument("--tf-memory-limit", type=int, default=3072)
 parser.add_argument("--n-trajs", type=int, default=10)
+
 args = parser.parse_args()
 
 # Initialize the log dictionary
@@ -83,6 +69,7 @@ os.makedirs(logging_dir, exist_ok=True)
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 gpus = tf.config.list_physical_devices("GPU")
 if len(gpus) > 0:
+    # prevent a single tf process from taking up all the GPU memory
     tf.config.set_logical_device_configuration(
         gpus[0],
         [tf.config.LogicalDeviceConfiguration(memory_limit=args.tf_memory_limit)],
@@ -135,7 +122,7 @@ for ep_id in range(args.n_trajs):
             np.concatenate([action["world_vector"], action["rot_axangle"], action["gripper"]]),
         )
 
-        # Log timestep details
+        # Log details for current timestep
         timestep_log = {
             "timestep": timestep,
             "info": info,

@@ -5,26 +5,19 @@ from simpler_env.utils.env.observation_utils import get_image_from_maniskill2_ob
 from simpler_env.policies.rt1.rt1_model import RT1Inference
 import mediapy as media
 
-# Ali Debug prefix for logging
-p = "ALI DEBUG: "
-
-print(f"{p} starting script")
-
 # Set up environment
 task_name = "google_robot_pick_coke_can"
 env = simpler_env.make(task_name)
-print(f"{p} made env")
 obs, reset_info = env.reset()
-print(f"{p} before getting instruction")
 instruction = env.unwrapped.get_language_instruction()
+
 print("Reset info", reset_info)
 print("Instruction", instruction)
-
 print("Control mode:", env.unwrapped.agent.control_mode)
 
 # Load the RT-1 checkpoint path
-checkpoint_dir = "/home/kasm-user/SimplerEnv-OpenVLA/checkpoints"
-rt_1_checkpoint = os.path.join(checkpoint_dir, "rt_1_x_tf_trained_for_002272480_step")
+checkpoint_dir = "/home/kasm-user/SimplerEnv-OpenVLA/checkpoints" # Edit these values! 
+rt_1_checkpoint = os.path.join(checkpoint_dir, "rt_1_x_tf_trained_for_002272480_step")  # Edit these values! 
 policy_setup = "google_robot" if "google" in task_name else "widowx_bridge"
 
 # Initialize RT-1 policy

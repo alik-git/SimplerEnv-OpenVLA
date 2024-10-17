@@ -4,21 +4,14 @@ from simpler_env.policies.openvla.openvla_model import OpenVLAInference
 import mediapy as media
 import numpy as np
 
-# Ali Debug prefix for logging
-p = "ALI DEBUG: "
-
-print(f"{p} starting script")
-
 # Set up environment
 # env = simpler_env.make('google_robot_pick_coke_can')
 env = simpler_env.make('widowx_spoon_on_towel')
-print(f"{p} made env")
 obs, reset_info = env.reset()
-print(f"{p} before getting instruction")
 instruction = env.unwrapped.get_language_instruction()
+
 print("Reset info", reset_info)
 print("Instruction", instruction)
-
 print("Control mode:", env.unwrapped.agent.control_mode)
 
 # Initialize OpenVLA policy

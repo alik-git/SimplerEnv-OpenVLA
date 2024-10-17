@@ -3,15 +3,9 @@ from simpler_env.utils.env.observation_utils import get_image_from_maniskill2_ob
 import mediapy as media
 import numpy as np
 
-p = "ALI DEBUG: "
-
-print(f"{p} starting script")
-
 # Set up environment
 env = simpler_env.make('google_robot_pick_coke_can')
-print(f"{p} made env")
 obs, reset_info = env.reset()
-print(f"{p} before getting instruction")
 
 # Fetch instruction from the environment
 instruction = env.unwrapped.get_language_instruction()
